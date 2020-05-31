@@ -1,7 +1,8 @@
 name: Trigger Prerelease
 on:
     push:
-        branches:
+        branches-ignore:
+            - "**"
 
 jobs:
     build:
