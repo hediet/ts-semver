@@ -16,9 +16,9 @@ export function semanticVersionRegexGroupsToVersion(
 	const preReleaseMatch = groups[4];
 	const buildMatch = groups[5];
 
-	let preReleaseInfo: PreReleaseInfo | null = null;
+	let preReleaseInfo: PrereleaseInfo | null = null;
 	if (preReleaseMatch) {
-		preReleaseInfo = new PreReleaseInfo(
+		preReleaseInfo = new PrereleaseInfo(
 			preReleaseMatch
 				.split(".")
 				.map((r) => (r.match(/0|[1-9][0-9]*/) ? parseInt(r) : r))
@@ -57,7 +57,7 @@ export class SemanticVersion {
 		public readonly major: number,
 		public readonly minor: number,
 		public readonly patch: number,
-		public readonly preRelease: PreReleaseInfo | null,
+		public readonly preRelease: PrereleaseInfo | null,
 		public readonly build: BuildInfo | null
 	) {
 		function testValidNumber(n: number, arg: string): void {
@@ -109,7 +109,7 @@ export class SemanticVersion {
 		major?: number | "increment";
 		minor?: number | "increment";
 		patch?: number | "increment";
-		preRelease?: PreReleaseInfo | null;
+		prerelease?: PrereleaseInfo | null;
 		build?: BuildInfo | null;
 	}): SemanticVersion {
 		function defaultIfUndefined<T>(val: T | undefined, defaultVal: T): T {
@@ -130,7 +130,7 @@ export class SemanticVersion {
 			defaultIfUndefinedNumber(update.major, this.major),
 			defaultIfUndefinedNumber(update.minor, this.minor),
 			defaultIfUndefinedNumber(update.patch, this.patch),
-			defaultIfUndefined(update.preRelease, this.preRelease),
+			defaultIfUndefined(update.prerelease, this.preRelease),
 			defaultIfUndefined(update.build, this.build)
 		);
 	}
@@ -152,8 +152,12 @@ export class SemanticVersion {
 	}
 }
 
-export class PreReleaseInfo {
+export class PrereleaseInfo {
 	constructor(public readonly parts: ReadonlyArray<number | string>) {
+		if (parts.length === 0) {
+			throw new Error("Must have at least one part!");
+		}
+
 		for (const p of parts) {
 			if (typeof p === "string") {
 				if (!/^[0-9a-zA-Z-]*[a-zA-Z-][0-9a-zA-Z-]*$/.exec(p)) {
@@ -171,7 +175,11 @@ export class PreReleaseInfo {
 }
 
 export class BuildInfo {
-	constructor(public readonly parts: ReadonlyArray<string>) {}
+	constructor(public readonly parts: ReadonlyArray<string>) {
+		if (parts.length === 0) {
+			throw new Error("Must have at least one part!");
+		}
+	}
 
 	public toString(): string {
 		return this.parts.join(".");

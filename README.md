@@ -25,12 +25,12 @@ yarn add @hediet/semver
 const ver = SemanticVersion.parse("1.0.0-alpha.1");
 equal(ver.major, 1);
 
-const ver1 = ver.with({ preRelease: null });
+const ver1 = ver.with({ prerelease: null });
 equal(ver1.toString(), "1.0.0");
 
 const ver2 = ver.with({ patch: "increment" });
 equal(ver2.toString(), "1.0.1-alpha.1");
 
-const ver3 = ver.with({ patch: "increment", preRelease: null });
+const ver3 = ver.with({ patch: "increment", prerelease: null });
 equal(ver3.toString(), "1.0.1");
 ```
