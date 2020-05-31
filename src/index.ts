@@ -13,13 +13,13 @@ export const semanticVersionRegex = new RegExp(
 export function semanticVersionRegexGroupsToVersion(
 	groups: (string | undefined)[]
 ): SemanticVersion {
-	const preReleaseMatch = groups[4];
+	const prereleaseMatch = groups[4];
 	const buildMatch = groups[5];
 
-	let preReleaseInfo: PreReleaseInfo | null = null;
-	if (preReleaseMatch) {
-		preReleaseInfo = new PreReleaseInfo(
-			preReleaseMatch
+	let prereleaseInfo: PreReleaseInfo | null = null;
+	if (prereleaseMatch) {
+		prereleaseInfo = new PreReleaseInfo(
+			prereleaseMatch
 				.split(".")
 				.map((r) => (r.match(/0|[1-9][0-9]*/) ? parseInt(r) : r))
 		);
@@ -32,7 +32,7 @@ export function semanticVersionRegexGroupsToVersion(
 		parseInt(groups[1]!),
 		parseInt(groups[2]!),
 		parseInt(groups[3]!),
-		preReleaseInfo,
+		prereleaseInfo,
 		buildInfo
 	);
 }
@@ -57,7 +57,7 @@ export class SemanticVersion {
 		public readonly major: number,
 		public readonly minor: number,
 		public readonly patch: number,
-		public readonly preRelease: PreReleaseInfo | null,
+		public readonly prerelease: PreReleaseInfo | null,
 		public readonly build: BuildInfo | null
 	) {
 		function testValidNumber(n: number, arg: string): void {
@@ -79,8 +79,8 @@ export class SemanticVersion {
 
 	public toString(): string {
 		let result = `${this.major}.${this.minor}.${this.patch}`;
-		if (this.preRelease) {
-			result += `-${this.preRelease.toString()}`;
+		if (this.prerelease) {
+			result += `-${this.prerelease.toString()}`;
 		}
 		if (this.build) {
 			result += `+${this.build.toString()}`;
@@ -99,7 +99,7 @@ export class SemanticVersion {
 
 	public getPrecedenceDifference(
 		other: SemanticVersion
-	): { kind: "major" | "minor" | "patch" | "preRelease" | "none" } {
+	): { kind: "major" | "minor" | "patch" | "prerelease" | "none" } {
 		other;
 		throw new Error("Not implemented yet.");
 	}
@@ -109,7 +109,7 @@ export class SemanticVersion {
 		major?: number | "increment";
 		minor?: number | "increment";
 		patch?: number | "increment";
-		preRelease?: PreReleaseInfo | null;
+		prerelease?: PreReleaseInfo | null;
 		build?: BuildInfo | null;
 	}): SemanticVersion {
 		function defaultIfUndefined<T>(val: T | undefined, defaultVal: T): T {
@@ -130,7 +130,7 @@ export class SemanticVersion {
 			defaultIfUndefinedNumber(update.major, this.major),
 			defaultIfUndefinedNumber(update.minor, this.minor),
 			defaultIfUndefinedNumber(update.patch, this.patch),
-			defaultIfUndefined(update.preRelease, this.preRelease),
+			defaultIfUndefined(update.prerelease, this.prerelease),
 			defaultIfUndefined(update.build, this.build)
 		);
 	}
@@ -139,14 +139,14 @@ export class SemanticVersion {
 		major: number;
 		minor: number;
 		patch: number;
-		preRelease?: ReadonlyArray<string | number>;
+		prerelease?: ReadonlyArray<string | number>;
 		build?: ReadonlyArray<string>;
 	} {
 		return {
 			major: this.major,
 			minor: this.minor,
 			patch: this.patch,
-			...(this.preRelease ? { preRelease: this.preRelease.parts } : {}),
+			...(this.prerelease ? { prerelease: this.prerelease.parts } : {}),
 			...(this.build ? { build: this.build.parts } : {}),
 		};
 	}
@@ -154,6 +154,10 @@ export class SemanticVersion {
 
 export class PreReleaseInfo {
 	constructor(public readonly parts: ReadonlyArray<number | string>) {
+		if (parts.length === 0) {
+			throw new Error("Must have at least one part!");
+		}
+
 		for (const p of parts) {
 			if (typeof p === "string") {
 				if (!/^[0-9a-zA-Z-]*[a-zA-Z-][0-9a-zA-Z-]*$/.exec(p)) {
@@ -171,7 +175,11 @@ export class PreReleaseInfo {
 }
 
 export class BuildInfo {
-	constructor(public readonly parts: ReadonlyArray<string>) {}
+	constructor(public readonly parts: ReadonlyArray<string>) {
+		if (parts.length === 0) {
+			throw new Error("Must have at least one part!");
+		}
+	}
 
 	public toString(): string {
 		return this.parts.join(".");
