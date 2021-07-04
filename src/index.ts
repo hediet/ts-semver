@@ -10,6 +10,8 @@ export const semanticVersionRegex = new RegExp(
 	`^${semanticVersionRegexEmbeddable.source}$`
 );
 
+const numberRegex = /0|[1-9][0-9]*/;
+
 export function semanticVersionRegexGroupsToVersion(
 	groups: (string | undefined)[]
 ): SemanticVersion {
@@ -21,7 +23,7 @@ export function semanticVersionRegexGroupsToVersion(
 		prereleaseInfo = new PreReleaseInfo(
 			prereleaseMatch
 				.split(".")
-				.map((r) => (r.match(/0|[1-9][0-9]*/) ? parseInt(r) : r))
+				.map((r) => (r.match(numberRegex) ? parseInt(r) : r))
 		);
 	}
 
@@ -150,9 +152,53 @@ export class SemanticVersion {
 			...(this.build ? { build: this.build.parts } : {}),
 		};
 	}
+
+	/**
+	 * Returns -1 if this version is older than the other version, 0 if they are equal, or 1 if this version is newer.
+	 */
+	public compareTo(other: SemanticVersion): -1 | 0 | 1 {
+		if (this.major != other.major) {
+			return comparePrimitives(this.major, other.major);
+		}
+		if (this.minor != other.minor) {
+			return comparePrimitives(this.minor, other.minor);
+		}
+		if (this.patch != other.patch) {
+			return comparePrimitives(this.patch, other.patch);
+		}
+
+		return PreReleaseInfo.compare(this.prerelease, other.prerelease);
+	}
+}
+
+function comparePrimitives(a: number | string, b: number | string): -1 | 0 | 1 {
+	if (a < b) {
+		return -1;
+	}
+	if (a > b) {
+		return 1;
+	}
+	return 0;
 }
 
 export class PreReleaseInfo {
+	public static compare(
+		a: PreReleaseInfo | null,
+		b: PreReleaseInfo | null
+	): -1 | 0 | 1 {
+		if (!a && !b) {
+			return 0;
+		}
+		if (!a) {
+			// prefer non-prerelease version.
+			return 1;
+		}
+		if (!b) {
+			return -1;
+		}
+		return a.compareTo(b);
+	}
+
 	constructor(public readonly parts: ReadonlyArray<number | string>) {
 		if (parts.length === 0) {
 			throw new Error("Must have at least one part!");
@@ -171,6 +217,39 @@ export class PreReleaseInfo {
 
 	public toString(): string {
 		return this.parts.map((p) => p.toString()).join(".");
+	}
+
+	public isNewer(other: PreReleaseInfo): boolean {
+		return this.compareTo(other) === 1;
+	}
+
+	public isOlder(other: PreReleaseInfo): boolean {
+		return this.compareTo(other) === -1;
+	}
+
+	public compareTo(other: PreReleaseInfo): -1 | 0 | 1 {
+		for (
+			let i = 0;
+			i < Math.max(this.parts.length, other.parts.length);
+			i++
+		) {
+			const a: string | number | undefined = this.parts[i];
+			const b: string | number | undefined = other.parts[i];
+
+			if (a === undefined) {
+				// Other has longer prerelease
+				return -1;
+			}
+			if (b === undefined) {
+				// This has longer prerelease
+				return 1;
+			}
+
+			if (a !== b) {
+				return comparePrimitives(a, b);
+			}
+		}
+		return 0;
 	}
 }
 

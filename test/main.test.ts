@@ -1,33 +1,72 @@
-import { equal, deepEqual } from "assert";
+import { equal, deepStrictEqual } from "assert";
 import { SemanticVersion } from "../src";
 
 function testParse(version: string): ReturnType<SemanticVersion["toJSON"]> {
 	const ver = SemanticVersion.parse(version);
-	deepEqual(ver, SemanticVersion.parse(ver.toString()));
+	deepStrictEqual(ver, SemanticVersion.parse(ver.toString()));
 	return ver.toJSON();
 }
 
 describe("SemanticVersion", () => {
 	it("parse", () => {
-		deepEqual(testParse("1.0.0"), {
+		deepStrictEqual(testParse("1.0.0"), {
 			major: 1,
 			minor: 0,
 			patch: 0,
 		});
 
-		deepEqual(testParse("1.0.0-alpha.1"), {
+		deepStrictEqual(testParse("1.0.0-alpha.1"), {
 			major: 1,
 			minor: 0,
 			patch: 0,
 			prerelease: ["alpha", 1],
 		});
 
-		deepEqual(testParse("1.0.0+build.1"), {
+		deepStrictEqual(testParse("1.0.0+build.1"), {
 			major: 1,
 			minor: 0,
 			patch: 0,
 			build: ["build", "1"],
 		});
+	});
+
+	describe("compare", () => {
+		function assertIsGreater(version1: string, version2: string) {
+			deepStrictEqual(
+				SemanticVersion.parse(version1).compareTo(
+					SemanticVersion.parse(version2)
+				),
+				1
+			);
+
+			deepStrictEqual(
+				SemanticVersion.parse(version2).compareTo(
+					SemanticVersion.parse(version1)
+				),
+				-1
+			);
+
+			deepStrictEqual(
+				SemanticVersion.parse(version1).compareTo(
+					SemanticVersion.parse(version1)
+				),
+				0
+			);
+
+			deepStrictEqual(
+				SemanticVersion.parse(version2).compareTo(
+					SemanticVersion.parse(version2)
+				),
+				0
+			);
+		}
+
+		it("1", () => assertIsGreater("1.0.1", "1.0.0"));
+		it("2", () => assertIsGreater("1.0.1", "1.0.1-alpha.1"));
+		it("3", () => assertIsGreater("1.0.1-alpha.1", "1.0.1-alpha.0"));
+		it("4", () => assertIsGreater("1.0.1-alpha.0.0", "1.0.1-alpha.0"));
+		it("5", () => assertIsGreater("1.0.1-beta", "1.0.1-alpha"));
+		it("6", () => assertIsGreater("1.0.1-nightly", "1.0.1-beta"));
 	});
 });
 
